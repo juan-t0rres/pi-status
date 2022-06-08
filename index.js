@@ -1,14 +1,30 @@
+import 'dotenv/config';
 import express from 'express';
 import os from 'os-utils';
 import ms from 'minestat';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import http from 'http';
+import bodyParser from 'body-parser';
 
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 const execP = promisify(exec);
 const PORT = 8080;
 const MINECRAFT_IP = '73.139.194.172';
 const MINECRAFT_PORT = '25594';
+
+app.get('/portfolio', (req, res) => {
+    http.get('http://juantorr.es/', function (response) {
+        // If you get here, you have a response.
+        // If you want, you can check the status code here to verify that it's `200` or some other `2xx`.
+        res.json({ active: true });
+    }).on('error', function (e) {
+        // Here, an error occurred.  Check `e` for the error.
+        res.json({ active: false });
+    });
+});
 
 // Gets cpu and memory usage
 app.get('/cpu', (req, res) => {
@@ -21,16 +37,58 @@ app.get('/cpu', (req, res) => {
     });
 });
 
+async function isMinecraftServerActive() {
+    try {
+        const systemctl = await execP('sudo systemctl status minecraftserver');
+        const stdout = systemctl.stdout;
+        const active = stdout.includes('Active: active');
+        return active;
+    }
+    catch {
+        return false;
+    }
+}
+
 // Gets information on minecraft server
-app.get('/minecraft', (req, res) => {
-    ms.init(MINECRAFT_IP, MINECRAFT_PORT, () => {
-        res.json({
-            online: ms.online,
-            version: ms.version,
-            latency: ms.latency,
-            players: ms.current_players
+app.get('/minecraft', async (req, res) => {
+    const active = await isMinecraftServerActive();
+    if (active) {
+        ms.init(MINECRAFT_IP, MINECRAFT_PORT, () => {
+            res.json({
+                active,
+                version: ms.version,
+                latency: ms.latency,
+                players: ms.current_players,
+            });
         });
-    })
+    }
+    else {
+        res.json({
+            active: false
+        });
+    }
+});
+
+app.post('/minecraft', async (req, res) => {
+    const activate = req.body.active;
+    const inputSecret = req.body.secret;
+    const isActive = await isMinecraftServerActive();
+    if (isActive === activate) {
+        return;
+    }
+
+    if (inputSecret !== process.env.SECRET) {
+        res.json({ correct: false });
+        return;
+    }
+
+    if (activate) {
+        await execP('sudo systemctl start minecraftserver');
+    }
+    else {
+        await execP('sudo systemctl stop minecraftserver');
+    }
+    res.json({ correct: true, activate });
 });
 
 // Gets status of pihole

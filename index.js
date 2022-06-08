@@ -6,7 +6,7 @@ import { exec } from 'child_process';
 
 const app = express();
 const execP = promisify(exec);
-const PORT = 3000;
+const PORT = 8080;
 const MINECRAFT_IP = '73.139.194.172';
 const MINECRAFT_PORT = '25594';
 

@@ -160,7 +160,7 @@ function App() {
             { title: 'Active', value: piHole?.active ? <OnlineTag /> : <OfflineTag /> }
           ]}
         />
-        <Card title="🥸 PiVPN"
+        <Card title="🔒 PiVPN"
           fields={[
             { title: 'Active', value: piVpn?.active ? <OnlineTag /> : <OfflineTag /> },
           ]}

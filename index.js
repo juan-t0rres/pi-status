@@ -6,6 +6,8 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import http from 'http';
 import bodyParser from 'body-parser';
+import checkDiskSpace from 'check-disk-space';
+import bcrypt from 'bcrypt';
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -22,6 +24,16 @@ app.get('/portfolio', (req, res) => {
         res.json({ active: true });
     }).on('error', function (e) {
         // Here, an error occurred.  Check `e` for the error.
+        res.json({ active: false });
+    });
+});
+
+app.get('/cloud', async (req, res) => {
+    const disk = await checkDiskSpace('/media/ssd');
+    const { free, size } = disk;
+    http.get('http://cloud.juantorr.es/', function (response) {
+        res.json({ active: true, free: (free / 1e9).toFixed(2) + "GB", size: (size / 1e9).toFixed(2) + "GB" });
+    }).on('error', function (e) {
         res.json({ active: false });
     });
 });
@@ -69,6 +81,16 @@ app.get('/minecraft', async (req, res) => {
     }
 });
 
+async function isSecret(inputSecret) {
+    const hash = await new Promise((resolve, reject) => {
+        bcrypt.hash(inputSecret, process.env.SALT, function (err, hash) {
+            if (err) reject(err)
+            resolve(hash)
+        });
+    });
+    return hash === process.env.SECRET;
+}
+
 app.post('/minecraft', async (req, res) => {
     const activate = req.body.active;
     const inputSecret = req.body.secret;
@@ -77,7 +99,8 @@ app.post('/minecraft', async (req, res) => {
         return;
     }
 
-    if (inputSecret !== process.env.SECRET) {
+    const correct = await isSecret(inputSecret);
+    if (!correct) {
         res.json({ correct: false });
         return;
     }

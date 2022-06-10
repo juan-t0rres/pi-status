@@ -40,16 +40,17 @@ function App() {
   const [piVpn, setPiVpn] = useState();
   const [piHole, setPiHole] = useState();
   const [portfolio, setPortfolio] = useState();
+  const [cloud, setCloud] = useState();
   const [mcLoad, setMcLoad] = useState(false);
   const [secret, setSecret] = useState();
   const [secretInput, setSecretInput] = useState('');
 
   useEffect(() => {
     async function getData() {
-      const piJson = await (await fetch('/cpu')).json();
-      setPi(piJson);
-      const minecraftJson = await (await fetch('/minecraft')).json();
-      setMcServer(minecraftJson);
+      refreshPi();
+      refreshMinecraft();
+      const cloudJson = await (await fetch('/cloud')).json();
+      setCloud(cloudJson);
       const piVpnJson = await (await fetch('/pivpn')).json();
       setPiVpn(piVpnJson);
       const piHoleJson = await (await fetch('/pihole')).json();
@@ -121,13 +122,6 @@ function App() {
         >
           <button onClick={() => refreshPi()}>Refresh</button>
         </Card>
-        <Card title="👔 Portfolio Website"
-          fields={[
-            { title: 'Active', value: portfolio?.active ? <OnlineTag /> : <OfflineTag /> },
-            { title: 'Domain 1', value: <a className='domain' href="https://juantorr.es/">juantorr.es</a> },
-            { title: 'Domain 2', value: <a className='domain' href="https://torresjuan.com/">torresjuan.com</a> }
-          ]}
-        />
         <Card title="🎮 Minecraft Server"
           fields={[
             { title: 'Active', value: mcServer?.active ? <OnlineTag /> : <OfflineTag /> },
@@ -143,6 +137,21 @@ function App() {
             <button onClick={() => refreshMinecraft()}>Refresh</button>
           </div>}
         </Card>
+        <Card title="👔 Portfolio Website"
+          fields={[
+            { title: 'Active', value: portfolio?.active ? <OnlineTag /> : <OfflineTag /> },
+            { title: 'Domain 1', value: <a className='domain' href="https://juantorr.es/">juantorr.es</a> },
+            { title: 'Domain 2', value: <a className='domain' href="https://torresjuan.com/">torresjuan.com</a> }
+          ]}
+        />
+        <Card title="☁️ Cloud Storage"
+          fields={[
+            { title: 'Active', value: cloud?.active ? <OnlineTag /> : <OfflineTag /> },
+            { title: 'Domain', value: <a className='domain' href="https://cloud.juantorr.es/">cloud.juantorr.es</a> },
+            { title: 'Total Space', value: cloud?.size ?? "N/A" },
+            { title: 'Free Space', value: cloud?.free ?? "N/A" }
+          ]}
+        />
         <Card title="🔑 Authentication">
           <div className="authentication">
             <label>Enter Secret</label>
